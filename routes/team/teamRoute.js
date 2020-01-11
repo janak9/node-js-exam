@@ -81,7 +81,6 @@ router.get("/list", async function(req, res){
 router.get("/:id", async function(req, res){
     try{
         var team = await Team.findById(req.params.id).populate("created_by", "_id username role");
-        console.log(team);
         return res.json(team);
     }catch(error){
         console.log(chalk.red("error : "), error);

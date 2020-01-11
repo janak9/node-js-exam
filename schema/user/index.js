@@ -24,6 +24,13 @@ const userSchema = new Schema({
         required: true,
         trim: true,
         enum:[admin, team, player]
+    },
+    profile: {
+        // data: Buffer,
+        // contentType: String,
+        type: String,
+        required: true,
+        trim: true
     }
 }, {
     collation: "users",

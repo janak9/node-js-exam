@@ -1,3 +1,4 @@
+require('dotenv').config({path: __dirname + '/.env'});
 const express = require("express");
 const mongoose = require("mongoose");
 const chalk = require('chalk');
@@ -7,13 +8,21 @@ const teamRoute = require("./routes/team/teamRoute");
 const playerRoute = require("./routes/player/playerRoute");
 const { Users, } = require("./schema/user");
 const cors = require("cors");
-
+const Person = require('./schema/person');
+const bodyParser = require("body-parser");
+const upload = require('./upload');
+const path = require('path');
 const secretKey = "someSecret";
 const app = express();
+
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(cors({
     exposedHeaders: 'Authorization_token',
 }));
+
 
 mongoose.connect("mongodb://localhost/exam");
 mongoose.connection.on("error", function(error){
@@ -23,16 +32,22 @@ mongoose.connection.on("error", function(error){
     console.log(chalk.green("connection establish successfully"));
 });
 
-app.use(express.json());
-
-app.post("/register", async function(req, res){
+app.post("/register", upload.single('profile'), async function(req, res){
     const posted_data = req.body;
     try{
         var count = await Users.count({username: posted_data.username});
         if(count > 0){
             return res.status(400).send("username already exists.");
         }
-        var user = await Users.create(posted_data);
+        
+        if(req.fileValidationError){
+            return res.status(400).send(req.fileValidationError);
+        }
+
+        var user = new Users(posted_data);
+        console.log(req.file);
+        user.profile = req.file.fullPath;
+        user.save();
 
         token = await jwtHelper.sign({ _id: user._id, role: user.role }, secretKey);
         console.log(chalk.blue(token));
@@ -43,7 +58,7 @@ app.post("/register", async function(req, res){
         if(error.name == "ValidationError" || error.name == "MongooseError"){
             return res.status(400).send(error.message);
         }
-        return res.status(500).send("an error occured while register user");
+        return res.status(500).send("an error occured while register user: " + error.message);
     }
 });
 
@@ -90,14 +105,53 @@ app.get("/user_by_token", async function(req, res){
     return res.status(400).send('please pass required token');
 });
 
+
 app.use("/team", teamRoute);
 app.use("/player", playerRoute);
 
+app.get("/person_list", async function(req, res){
+    try{
+        var persons = await Person.find();
+        return res.json(persons);
+    }catch(error){
+        console.log(chalk.red("error : "), error);
+        return res.status(500).send("an error occured while retriving person list");
+    }
+});
 
 app.listen(3000, function(error){
     if(error){
         console.log("An error occured while staring node app!", error);
         return;
     }
-    console.log("Node application successfully started on http://localhost:3000");
+    console.log("Node application successfully started on " + process.env['SITE_URL']);
 });
+
+/*
+[
+    {
+        "name": "janak",
+        "email": "janak@gmail.com",
+        "contact_no": "9876543210",
+        "gender": "male"
+    },
+    {
+        "name": "smita",
+        "email": "smita@gmail.com",
+        "contact_no": "9988774455",
+        "gender": "female"
+    },
+    {
+        "name": "gaurav",
+        "email": "gaurav@gmail.com",
+        "contact_no": "965661168",
+        "gender": "male"
+    },
+    {
+        "name": "radhe",
+        "email": "radhe@gmail.com",
+        "contact_no": "9852369748",
+        "gender": "female"
+    }
+]
+*/
