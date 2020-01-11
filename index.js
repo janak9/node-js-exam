@@ -6,6 +6,7 @@ const jwtHelper = require('./helper/jwtHelper');
 const bcrypt = require("bcryptjs");
 const teamRoute = require("./routes/team/teamRoute");
 const playerRoute = require("./routes/player/playerRoute");
+const userRoute = require("./routes/user");
 const { Users, } = require("./schema/user");
 const cors = require("cors");
 const Person = require('./schema/person');
@@ -46,6 +47,7 @@ app.post("/register", upload.single('profile'), async function(req, res){
 
         var user = new Users(posted_data);
         console.log(req.file);
+        user.password = await bcrypt.hash(user.password, 8);
         user.profile = req.file.fullPath;
         user.save();
 
@@ -106,6 +108,7 @@ app.get("/user_by_token", async function(req, res){
 });
 
 
+app.use("/user", userRoute);
 app.use("/team", teamRoute);
 app.use("/player", playerRoute);
 

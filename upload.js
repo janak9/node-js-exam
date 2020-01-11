@@ -13,6 +13,7 @@ var storage = multer.diskStorage({
     filename: function(req, file, cb){
         let fname = Date.now() + file.originalname.replace(' ', '_');
         file.fullPath = process.env['SITE_URL'] + file.subPath + "/" + fname;
+        console.log(file);
         cb(null, fname);
     }
 });

@@ -5,6 +5,7 @@ var jwtHelper = require("../helper/jwtHelper");
 const secretKey = "someSecret";
 const upload = require('../upload');
 const router = express.Router();
+const fs = require('fs');
 
 
 router.use(async function(req, res, next){
@@ -24,6 +25,22 @@ router.use(async function(req, res, next){
 router.put("/profile_update", upload.single('profile'), async function(req, res){
     try{
         var user = await Users.findById(req.user._id);
+        
+        if(req.fileValidationError){
+            return res.status(400).send(req.fileValidationError);
+        }
+        
+        if(user.profile){
+            let loc = user.profile.replace(process.env['SITE_URL'], 'public');
+            fs.unlink(loc, function (err) {
+                if (err) console.log(err);
+                console.log('File deleted!');
+            });
+        }
+
+        console.log(req.file);
+        user.profile = req.file.fullPath;
+        user.save();
 
         return res.json(user);
     }catch(error){
